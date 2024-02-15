@@ -1,0 +1,175 @@
+Notes From Gradle Crash Course
+
+What is it?
+- Build automation tool
+- Packages code into deployable unit
+- Written in Kotlin language ( built on top of “JVM” or Java Virtual Machine)
+- Can also be written in Groovy
+- Highly configurable
+
+Why use it?
+- Gradle makes building and running apps very easy
+- No need for people using your projects to install gradle
+    - Uses Gradle wrapper, comes bundled w/ project
+    - Just run ./gradlew build
+- Very concise - no XML config
+- Very fast, won’t rerun tests if the code hasn’t changed
+
+Key concepts
+- build.gradle is the Gradle build script
+    - Same as Maven’s pom.xml file
+    - Will always live in the top of your project
+- Tasks
+    - Defines a unit of work
+    - Invoked from the command line
+    - See available tasks with ./gradlew tasks
+    - Can create your own custom tasks
+    - Tasks have dependencies on other tasks
+    - Creates task graph
+- Wrapper
+    - Script used to invoke Gradle and run tasks
+    - Always committed into version control
+    - No local grackle installation needed for anyone building your project
+    - Contains a specific version of cradle for your project
+    - ALWAYS use Gradle wrapper (unless initializing a new cradle project)
+    - Mac and Linux
+        - ./gradlewbuild
+    - Windows
+        - gradle.bat build
+- Tasks represent a unit of work and are linked through the task graph
+
+Simple Gradle project structure:
+	- - build.gradle.kts						# main build configuration file
+	- - gradle									# gradle directory
+		- - wrapper
+			- - gradle-wrapper.jar
+			- - gradle-wrapper.properties
+	- - gradlew									# Linux Version
+	- - gradlew.bat								# Windows Version
+	- - settings.gradle.kts						# Set project name, and more
+
+All files in example directory should go into version control, however the .gradle hidden directory should not. The .gitignore file is created automatically by Gradle.
+
+Java Project Requirements:
+    - Compile Java classes from .java into .class files
+    - Manage resources that live alongside code
+    - Package everything into a jar file
+    - Run tests
+    - Define dependencies
+- Gradle Java Plugin
+    - Include in project by adding the entry to build.gradle.kts (example below)
+    - Java is a core Gradle plugin
+- Java PLugins:
+    - Compiling Classes
+        - Adds a task compileJava, run task with ./gradlew compileJava
+        - Uses Java installation to compile .java into .class files
+        - Outputs .class files to build directory
+    - Managing resources
+        - Adds a task processResources, run task with ./gradlew precessResources
+        - Copies contents of resources directories into build directory
+    - Package into jar file
+        - Adds a task jar,  run with ./gradlew jar
+        - Adds compiled classes and resources to jar archive
+        - Jar file named <project-name>-<version>.jar
+    - Easily run tests
+        - Adds a task test, run with ./gradlew test
+        - Compiles tests, processes resources, runs tests
+        - Creates a test report
+    - Define dependencies
+        - Use the dependencies section of build.gradle.kts (view code block below)
+        - Dependency configuration
+            - Implementation
+            - testImplementation
+        - Dependency configuration used to generate classpath
+    - Gradle Java project layout and destination
+        - src/main/java >> build/classes/java/main
+        - src/main/resources >> build/resources/main
+        - src/test/java >> build/classes/java/test
+        - src/test/resources >> build/resources/test
+        - Same layout as maven tool uses (WE ARE USING THIS)
+
+Summary
+    - The Java plugin initializes a project asa java project
+    - It adds tasks for compileJava, processResources, jar and test
+    - Dependencies are either implementation or testImplementation
+    - Always use the standard Java project layout
+Kotlin Features:
+    Feature 1: Kotlin is a JVM language
+        - Kotlin is a scripting language running in the JVM
+        - 3 differences between Kotlin and Java
+            - Semicolons are optional in Kotlin
+
+                    val name = “Bob”
+                    printIn(name)
+                    // prints Bob
+
+            - Strings support interpolation by default
+
+                    var name = “Bob”
+                    printIn(“His name is $name”)
+                    // or 
+                    printIn(“His name is ${name}”)
+                    // prints His name is Bob
+
+            - Val is used for read-only variables and var is for mutable variables
+
+                    val name = “Bob”
+                    printIn(“${name} and always ${name}”)
+                    //prints Bob and always Bob
+
+                    var mutableName = "Bob v2"
+                    mutableName = "Bob v3"
+                    printIn("New and improved ${mutableName}")
+                    // prints New and improved Bob v3
+
+    Feature 2: lambda expressions
+        - lambda expression = pass function around and execute later
+
+            val lambdaExpression = {
+                for (i in 3 downTo 1) {
+                    printIn(i)
+                }
+                printIn(" Lift off!)
+            }
+            lambdaExpression()
+            // prints 321 Lift off!
+
+    Feature 3: parentheses sometimes optional
+        - parentheses normally required to call function
+            
+            dependencies {
+                implementation("org.apache.commons:commons-lang3:3.13.0")
+            }
+
+        - when lambda expression is final argument, perentheses optional
+        
+            repositories {
+                mavenCentral()
+            }
+
+Task Graph Essentials:
+    - tasks can depend on other tasks (think gitlab pipeline)
+    - Build task depends on the Assemble and Check tasks. Assemble and Check run first, build doesn't do anything other than aggregating assemble and check tasks
+    - This means you only need to run ./gradlew build for it to Assemble and Check
+    - Example Java plugin task dependency graph:
+    (performs action)
+    (aggregates tasks)
+    (important task to remember)
+
+        :build                                               // (aggregates tasks) (important task to remember)
+        +--- :assemble                                       // (aggregates tasks) (important task to remember)
+        |    \--- :jar                                       // (performs action) (important task to remember)
+        |         \--- :classes                              // (aggregates tasks)
+        |              +--- :compileJava                     // (performs action)
+        |              \--- :processResources                // (performs action)
+        \--- :check                                          // (aggregates tasks) (important task to remember)
+             \--- :test                                      // (performs action) (important task to remember)
+                  +--- :classes                              // (aggregates tasks)
+                  |    +--- :compileJava                     // (performs action)
+                  |    \--- :processResources                // (performs action)
+                  \--- :testClasses                          // (aggregates tasks)
+                       +--- :compileTestJava                 // (performs action)
+                       |    \--- :classes                    // (aggregates tasks)
+                       |         +--- :compileJava           // (performs action)
+                       |         \--- :processResources      // (performs action)
+                       \--- :processTestResources            // (performs action)
